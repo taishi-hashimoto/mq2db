@@ -1,0 +1,62 @@
+# Example configuration for mq2db.
+
+# Target services list.
+# Each entry also corresponds to the name of database table and the MQ endpoint.
+targets:
+  # Example service.
+  example:
+    # MQ endpoint setting.
+    address: tcp://127.0.0.1:12345
+    # Data loader from bytes received from MQ socket.
+    # loader is used as follows to generate a dict representation of received bytes:
+    #
+    #     loader = mq2db.JsonLoader(*args, **kwargs)  # Depending on the setting below.
+    #     data = loader(sock.recv())  # `sock` is the MQ socket.
+    #
+    # Default loaders are:
+    # - mq2db.JsonLoader
+    #   Builtin loader for JSON.
+    # - mq2db.TextLoader
+    #   Builtin loader for UTF-8 encoded text.
+    # - your_package.your_module.YourLoader
+    #   Custom loader can be used if it can be resolved via ordinary import system.
+    #   In this case, a class named `YourLoader` under a module `your_module`,
+    #   under a package `your_package`, is imported.
+    #
+    # args and kwargs are passed to the class's initializer.
+    loader:
+      class: your_package.your_module.YourLoader
+      kwargs:
+        verbose: True
+    # Database settings.
+    database:
+      # Database URL which is passed to sqlalchemy.
+      # Note for the case when the driver is `sqlite`:
+      # - '~' is expanded to user's home folder.
+      # - If url contains datetime format like %Y%m%d,
+      #   it is first formatted by `datetime.now(timezone.utc).strftime(url)`.
+      url: sqlite:///~/.mq2db/somewhere/example-%Y%m%d.sqlite3
+      # Column spec.
+      columns:
+        somenumber: INTEGER NOT NULL
+        anothernumber: REAL
+        sometext: TEXT NOT NULL
+      # Primary key configuration.
+      # Multiple columns can be specified as a list entries.
+      primary_key:
+        - somenumber
+      # Indices configuration.
+      # Multiple indices can be created.
+      indices:
+        # Index.
+        # Multiple columns can be specified as a list entries.
+        index_anothernumber:
+          - anothernumber
+      # Automatically add a column named "_datetime_" which holds the current timestamp.
+      # If no primary key is configured, this becomes the primary key.
+      _datetime_: True
+      # Automatically add a column named "_raw_" which holds the raw data in binary blob.
+      _raw_: False
+      # Interval for database writing in timedelta spec.
+      interval:
+        seconds: 3

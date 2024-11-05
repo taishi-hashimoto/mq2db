@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mq2db"
+description = "Collect MQ messages and save them into database."
+authors = [
+  {name = "Taishi Hashimoto", email = "hashimoto.taishi@nipr.ac.jp"},
+]
+version = "2024.11.05"
+requires-python = ">= 3.10"
+dependencies = [
+  "sqlalchemy",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[project.scripts]
+mq2db = "mq2db.__main__:main"
