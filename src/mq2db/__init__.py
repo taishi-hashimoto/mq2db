@@ -70,8 +70,8 @@ class _Worker(Thread):
         dbconf = self._conf.get("database")
         self._db_url: str = dbconf["url"]
         if self._db_url.startswith("sqlite"):
-            db_path = self._db_url.split("sqlite:///")[1]
-            self._db_url = "sqlite:///" + expanduser(db_path)
+            db_path = expanduser(self._db_url.split("sqlite:///")[1])
+            self._db_url = "sqlite:///" + db_path
             makedirs(dirname(db_path), exist_ok=True)
 
         # Table settings.
