@@ -3,7 +3,7 @@ import time
 import yaml
 import json
 from os import makedirs
-from os.path import expanduser
+from os.path import expanduser, dirname
 from datetime import datetime, timedelta, timezone
 from threading import Thread, Event
 from importlib import import_module
@@ -70,9 +70,9 @@ class _Worker(Thread):
         dbconf = self._conf.get("database")
         self._db_url: str = dbconf["url"]
         if self._db_url.startswith("sqlite"):
-            db_root = self._db_url.split("sqlite:///")[1]
+            self._db_url = expanduser(self._db_url)
+            db_root = dirname(self._db_url.split("sqlite:///")[1])
             makedirs(db_root, exist_ok=True)
-            self._db_url = "sqlite:///" + expanduser(db_root)
 
         # Table settings.
         self._auto_datetime = dbconf.get("_datetime_", False)
