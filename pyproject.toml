@@ -12,6 +12,8 @@ version = "2024.11.05"
 requires-python = ">= 3.10"
 dependencies = [
   "sqlalchemy",
+  "pyzmq",
+  "PyYAML",
 ]
 
 [tool.setuptools]
