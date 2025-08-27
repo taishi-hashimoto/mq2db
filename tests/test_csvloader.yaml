@@ -1,0 +1,43 @@
+# Example configuration for mq2db.
+
+# Target services list.
+# Each entry also corresponds to the name of database table and the MQ endpoint.
+targets:
+  # Example service.
+  test_csvloader:
+    # MQ endpoint setting.
+    type: sub
+    method: connect
+    address: ipc:///tmp/mq2db-test_csvloader
+    topic: ""
+    # Data loader from bytes received from MQ socket.
+    loader:
+      class: mq2db.CSVLoader
+      kwargs:
+        encoding: utf-8
+        header: ["t", "rssi", "raw"]
+        verbose: True
+    # Database settings.
+    database:
+      # Database URL which is passed to sqlalchemy.
+      url: sqlite:///~/.mq2db/tests/test_csvloader.sqlite3
+      # Column spec.
+      columns:
+        t: DATETIME NOT NULL
+        rssi: REAL NOT NULL
+        raw: TEXT NOT NULL
+      # Primary key configuration.
+      # Multiple columns can be specified as a list entries.
+      primary_key:
+        - t
+      # Indices configuration.
+      # Multiple indices can be created.
+      indices: null
+      # Automatically add a column named "_datetime_" which holds the current timestamp.
+      # If no primary key is configured, this becomes the primary key.
+      _datetime_: no
+      # Automatically add a column named "_raw_" which holds the raw data in binary blob.
+      _raw_: no
+      # Interval for database writing in timedelta spec.
+      interval:
+        seconds: 5

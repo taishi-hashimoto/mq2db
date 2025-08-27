@@ -1,0 +1,19 @@
+# Example configuration for mq2db.
+
+mq2db:
+  specific:
+    configurations:
+      targets:
+        test_section:
+          type: sub
+          method: connect
+          address: ipc:///tmp/mq2db-test_csvloader
+          topic: ""
+          loader:
+            class: mq2db.JSONLoader
+            kwargs:
+              verbose: True
+          database:
+            url: sqlite:///~/.mq2db/tests/test_csvloader.sqlite3
+            _datetime_: True
+            _raw_: True

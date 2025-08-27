@@ -1,6 +1,6 @@
 # mq2db
 
-Dump messages from message queue into databae.
+Dump data from message queue into database.
 
 **NOTE: Currently it is using zmq only.**
 
@@ -9,4 +9,5 @@ Received data is parsed and saved into database according to the configuration f
 
 ## Configuration
 
-Example configuration is here: [example.yaml](./example.yaml)
+Example configuration is here: [example.yaml](./example.yaml)  
+More examples can also be found in [tests](./tests/) directory.

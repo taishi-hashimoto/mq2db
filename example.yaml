@@ -5,19 +5,28 @@
 targets:
   # Example service.
   example:
+    # Type of the message queue.
+    type: sub
+    # Method for connecting to the message queue.
+    method: connect
     # MQ endpoint setting.
     address: tcp://127.0.0.1:12345
+    # For SUB socket, topic to subscribe.
+    topic: ""
     # Data loader from bytes received from MQ socket.
     # loader is used as follows to generate a dict representation of received bytes:
     #
-    #     loader = mq2db.JsonLoader(*args, **kwargs)  # Depending on the setting below.
+    #     loader = mq2db.JSONLoader(*args, **kwargs)  # Depending on the setting below.
     #     data = loader(sock.recv())  # `sock` is the MQ socket.
     #
     # Default loaders are:
-    # - mq2db.JsonLoader
+    # - mq2db.JSONLoader
     #   Builtin loader for JSON.
+    #   If no loader is specified, JSONLoader is used by default.
     # - mq2db.TextLoader
     #   Builtin loader for UTF-8 encoded text.
+    # - mq2db.CSVLoader
+    #   Builtin loader for CSV (comma-separated values).
     # - your_package.your_module.YourLoader
     #   Custom loader can be used if it can be resolved via ordinary import system.
     #   In this case, a class named `YourLoader` under a module `your_module`,
@@ -26,7 +35,12 @@ targets:
     # args and kwargs are passed to the class's initializer.
     loader:
       class: your_package.your_module.YourLoader
+      args:
+        - arg1
+        - arg2
       kwargs:
+        someparameter: 1
+        anotherparameter: hoge
         verbose: True
     # Database settings.
     database:
@@ -37,6 +51,7 @@ targets:
       #   it is first formatted by `datetime.now(timezone.utc).strftime(url)`.
       url: sqlite:///~/.mq2db/somewhere/example-%Y%m%d.sqlite3
       # Column spec.
+      # If omitted, _datetime_ and _raw_ should be True to store data.
       columns:
         somenumber: INTEGER NOT NULL
         anothernumber: REAL
@@ -47,6 +62,7 @@ targets:
         - somenumber
       # Indices configuration.
       # Multiple indices can be created.
+      # If you just need auto index by primary key, just remove this section.
       indices:
         # Index.
         # Multiple columns can be specified as a list entries.
@@ -58,5 +74,6 @@ targets:
       # Automatically add a column named "_raw_" which holds the raw data in binary blob.
       _raw_: False
       # Interval for database writing in timedelta spec.
+      # Default is 1 second.
       interval:
         seconds: 3
