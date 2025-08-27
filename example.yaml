@@ -17,7 +17,7 @@ targets:
     recv:
       # For ZeroMQ:
       # recv, recv_multipart, recv_pyobj, recv_serialized, recv_json, recv_string, recv_unicode, ...
-      method: recv
+      method: recv_pyobj
     # Data loader from bytes received from MQ socket.
     # loader is used as follows to generate a dict representation of received bytes:
     #
@@ -26,9 +26,11 @@ targets:
     #     data = loader(recv_method())
     #
     # Default loaders are:
+    # - mq2db.DictLoader
+    #   Builtin loader for Python dict object.
+    #   If no loader is specified, this is used by default.
     # - mq2db.JSONLoader
     #   Builtin loader for JSON.
-    #   If no loader is specified, JSONLoader is used by default.
     # - mq2db.TextLoader
     #   Builtin loader for UTF-8 encoded text.
     # - mq2db.CSVLoader

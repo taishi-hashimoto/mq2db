@@ -14,6 +14,18 @@ from importlib import import_module
 import sqlalchemy
 
 
+class DictLoader:
+    "Default loader for Python dict object."
+    
+    def __init__(self, verbose: bool = False) -> None:
+        self._verbose = verbose
+
+    def __call__(self, data: dict[str, Any]) -> Any:
+        if self._verbose:
+            print("DictLoader called with:", data)
+        return data
+
+
 class JSONLoader:
     "Default JSON loader."
 
@@ -88,18 +100,19 @@ class _Worker(Thread):
         self._sock.setsockopt(zmq.LINGER, 0)
         self._sock.setsockopt(zmq.RCVTIMEO, 100)
 
+        # recv method name
         recv_method = self._conf.get("recv", {"method": "recv"}).get("method", "recv")
         self._recv = getattr(self._sock, recv_method)
-        self._sock.recv_
 
-        print(f"Worker {self._name} connected to {self._conf['address']} ({mq_type}, {mq_method})", file=sys.stderr)
+        # print(f"Worker {self._name} connected to {self._conf['address']} ({mq_type}, {mq_method})", file=sys.stderr)
 
         # Dynamically import the loader class.
-        module_name, class_name = self._conf["loader"]["class"].rsplit(".", 1)
+        default_loader = {"class": "mq2db.DictLoader"}
+        module_name, class_name = self._conf.get("loader", default_loader).get("class", "mq2db.DictLoader").rsplit(".", 1)
         module = import_module(module_name)
         self._loader = getattr(module, class_name)(
-            *self._conf["loader"].get("args", []),
-            **self._conf["loader"].get("kwargs", {}))
+            *self._conf.get("loader", default_loader).get("args", []),
+            **self._conf.get("loader", default_loader).get("kwargs", {}))
 
         # Prepare database configuration and URL.
         dbconf = self._conf["database"]
