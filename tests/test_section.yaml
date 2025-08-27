@@ -9,8 +9,6 @@ mq2db:
           method: connect
           address: ipc:///tmp/mq2db-test_csvloader
           topic: ""
-          recv:
-            method: recv_pyobj
           database:
             url: sqlite:///~/.mq2db/tests/test_csvloader.sqlite3
             _datetime_: True

@@ -20,9 +20,9 @@ class DictLoader:
     def __init__(self, verbose: bool = False) -> None:
         self._verbose = verbose
 
-    def __call__(self, data: dict[str, Any]) -> Any:
+    def __call__(self, data: dict[str, Any]) -> dict[str, Any]:
         if self._verbose:
-            print("DictLoader called with:", data)
+            print(data)
         return data
 
 
@@ -101,7 +101,7 @@ class _Worker(Thread):
         self._sock.setsockopt(zmq.RCVTIMEO, 100)
 
         # recv method name
-        recv_method = self._conf.get("recv", {"method": "recv"}).get("method", "recv")
+        recv_method = self._conf.get("recv", {"method": "recv_pyobj"}).get("method", "recv_pyobj")
         self._recv = getattr(self._sock, recv_method)
 
         # print(f"Worker {self._name} connected to {self._conf['address']} ({mq_type}, {mq_method})", file=sys.stderr)
@@ -145,6 +145,7 @@ class _Worker(Thread):
                     sqlalchemy.text(f"CREATE INDEX IF NOT EXISTS {index} ON {self._name}({','.join(columns)});"))
 
         # Insert statement.
+        insert_prefix = dbconf.get("insert_prefix", "")
         self._columns = list(dbconf.get("columns", {}).keys())
         insert_columns = self._columns.copy()
         if self._auto_datetime:
@@ -154,7 +155,7 @@ class _Worker(Thread):
         placeholders = ",".join(f":{column}" for column in insert_columns)
         self._sql_insert = sqlalchemy.text(
             f"""
-            INSERT INTO {self._name}({', '.join(insert_columns)})
+            INSERT {insert_prefix} INTO {self._name}({', '.join(insert_columns)})
             VALUES({placeholders})
             """)
 

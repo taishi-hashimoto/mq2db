@@ -81,6 +81,9 @@ targets:
       _datetime_: True
       # Automatically add a column named "_raw_" which holds the raw data in binary blob.
       _raw_: False
+      # Prefix for INSERT statement.
+      # If you use 'OR IGNORE' on SQLite, duplicate entries will be discarded.
+      insert_prefix: "OR IGNORE"
       # Interval for database writing in timedelta spec.
       # Default is 1 second.
       interval:
