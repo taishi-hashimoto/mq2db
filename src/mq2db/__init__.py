@@ -5,6 +5,7 @@ import time
 import yaml
 import json
 import csv
+from pprint import pprint
 from typing import Optional, List, Any
 from os import makedirs
 from os.path import expanduser, dirname
@@ -22,7 +23,7 @@ class DictLoader:
 
     def __call__(self, data: dict[str, Any]) -> dict[str, Any]:
         if self._verbose:
-            print(data)
+            pprint(data, sort_dicts=False)
         return data
 
 
@@ -36,7 +37,7 @@ class JSONLoader:
         "Return dict representation of data, assuming it is JSON."
         result = json.loads(data)
         if self._verbose:
-            print(result)
+            pprint(result, sort_dicts=False)
         return result
 
 
@@ -49,7 +50,7 @@ class TextLoader:
     def __call__(self, data: bytes) -> str:
         result = data.decode()
         if self._verbose:
-            print(result)
+            pprint(result, sort_dicts=False)
         return result
 
 
@@ -69,7 +70,7 @@ class CSVLoader:
                 line_data[key.strip()] = value.strip()
             result.append(line_data)
         if self._verbose:
-            print(result)
+            pprint(result, sort_dicts=False)
         return result
 
 
@@ -161,16 +162,22 @@ class _Worker(Thread):
 
         # Interval for database writing.
         self._interval = timedelta(**dbconf.get("interval", {"seconds": 1}))
+        
+        self._sql_init = [
+            sqlalchemy.text(cmd) for cmd in dbconf.get("init", [])
+        ]
 
     def stop(self):
         self._stop_event.set()
 
-    def flush(self, now, rows):
+    def flush(self, now: datetime, rows: list[dict]):
         if not rows:
             return
         url = now.strftime(self._db_url)
-        with sqlalchemy.create_engine(url).connect() as con:
+        with sqlalchemy.create_engine(url, isolation_level="AUTOCOMMIT").connect() as con:
             with con.begin():
+                for cmd in self._sql_init:
+                    con.execute(cmd)
                 con.execute(self._sql_table)
                 for each in self._sql_indices:
                     con.execute(each)

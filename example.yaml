@@ -58,6 +58,13 @@ targets:
       # - If url contains datetime format like %Y%m%d,
       #   it is first formatted by `datetime.now(timezone.utc).strftime(url)`.
       url: sqlite:///~/.mq2db/somewhere/example-%Y%m%d.sqlite3
+      # Custom initialization.
+      # Lines in init will be executed right after each connection is established.
+      init:
+        - PRAGMA journal_mode=WAL
+        - PRAGMA synchronous=NORMAL;
+        - PRAGMA temp_store=MEMORY;
+        - PRAGMA busy_timeout=3000;
       # Column spec.
       # If omitted, _datetime_ and _raw_ should be True to store data.
       columns:
