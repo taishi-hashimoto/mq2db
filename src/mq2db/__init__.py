@@ -88,6 +88,10 @@ class _Worker(Thread):
         self._sock.setsockopt(zmq.LINGER, 0)
         self._sock.setsockopt(zmq.RCVTIMEO, 100)
 
+        recv_method = self._conf.get("recv", {"method": "recv"}).get("method", "recv")
+        self._recv = getattr(self._sock, recv_method)
+        self._sock.recv_
+
         print(f"Worker {self._name} connected to {self._conf['address']} ({mq_type}, {mq_method})", file=sys.stderr)
 
         # Dynamically import the loader class.
@@ -164,7 +168,7 @@ class _Worker(Thread):
         now = prev = datetime.now(timezone.utc)
         while not self._stop_event.is_set():
             try:
-                data = self._sock.recv()
+                data = self._recv()
                 now = datetime.now(timezone.utc)
                 dict_repr = self._loader(data)
                 if not isinstance(dict_repr, list):

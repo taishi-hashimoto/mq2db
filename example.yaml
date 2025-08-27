@@ -13,11 +13,17 @@ targets:
     address: tcp://127.0.0.1:12345
     # For SUB socket, topic to subscribe.
     topic: ""
+    # Receive method for socket.
+    recv:
+      # For ZeroMQ:
+      # recv, recv_multipart, recv_pyobj, recv_serialized, recv_json, recv_string, recv_unicode, ...
+      method: recv
     # Data loader from bytes received from MQ socket.
     # loader is used as follows to generate a dict representation of received bytes:
     #
+    #     recv_method = getattr(sock, <recv.method>)  # `sock` is the MQ socket.
     #     loader = mq2db.JSONLoader(*args, **kwargs)  # Depending on the setting below.
-    #     data = loader(sock.recv())  # `sock` is the MQ socket.
+    #     data = loader(recv_method())
     #
     # Default loaders are:
     # - mq2db.JSONLoader
