@@ -61,7 +61,7 @@ targets:
       # Custom initialization.
       # Lines in init will be executed right after each connection is established.
       init:
-        - PRAGMA journal_mode=WAL
+        - PRAGMA journal_mode=WAL;
         - PRAGMA synchronous=NORMAL;
         - PRAGMA temp_store=MEMORY;
         - PRAGMA busy_timeout=3000;
