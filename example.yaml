@@ -86,6 +86,8 @@ targets:
       # Automatically add a column named "_datetime_" which holds the current timestamp.
       # If no primary key is configured, this becomes the primary key.
       _datetime_: True
+      # Automatically add a column named "_timestamp_", coarse representation of current time in UNIX timestamp.
+      _timestamp_: True
       # Automatically add a column named "_raw_" which holds the raw data in binary blob.
       _raw_: False
       # Prefix for INSERT statement.

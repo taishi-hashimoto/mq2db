@@ -125,11 +125,14 @@ class _Worker(Thread):
 
         # Table settings.
         self._auto_datetime = dbconf.get("_datetime_", False)
+        self._auto_timestamp = dbconf.get("_timestamp_", False)
         self._auto_raw = dbconf.get("_raw_", False)
         primary_key = dbconf.get("primary_key", ["_datetime_"] if self._auto_datetime else None)
         columns_spec = [",\n".join(f"  {key} {val}" for key, val in dbconf.get("columns", {}).items())]  # User specified columns
         if self._auto_datetime:
             columns_spec.insert(0, "  _datetime_ DATETIME NOT NULL")
+        if self._auto_timestamp:
+            columns_spec.insert(0, "  _timestamp_ INTEGER NOT NULL")
         if self._auto_raw:
             columns_spec.append("  _raw_ BLOB NOT NULL")  # Special, raw bytes
         if primary_key is not None:
@@ -151,6 +154,8 @@ class _Worker(Thread):
         insert_columns = self._columns.copy()
         if self._auto_datetime:
             insert_columns.append("_datetime_")
+        if self._auto_timestamp:
+            insert_columns.append("_timestamp_")
         if self._auto_raw:
             insert_columns.append("_raw_")
         placeholders = ",".join(f":{column}" for column in insert_columns)
@@ -197,6 +202,8 @@ class _Worker(Thread):
                 for each in dict_repr:
                     if self._auto_datetime:
                         each["_datetime_"] = now
+                    if self._auto_timestamp:
+                        each["_timestamp_"] = int(now.timestamp())
                     if self._auto_raw:
                         each["_raw_"] = data
                 rows.extend(dict_repr)
