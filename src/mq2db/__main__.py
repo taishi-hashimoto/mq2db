@@ -9,7 +9,7 @@ def main():
         type=str,
         help="Path to the YAML configuration file.")
     argp.add_argument(
-        "--section",
+        "-s", "--section",
         type=str,
         default=None,
         help=("Section name in the YAML file for mq2db specific configuration. "

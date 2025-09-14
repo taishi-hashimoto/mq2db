@@ -1,10 +1,9 @@
+"mq2db core"
 import os
-import sys
-import zmq
 import time
-import yaml
 import json
 import csv
+import traceback
 from pprint import pprint
 from typing import Optional, List, Any
 from os import makedirs
@@ -12,12 +11,14 @@ from os.path import expanduser, dirname
 from datetime import datetime, timedelta, timezone
 from threading import Thread, Event
 from importlib import import_module
+import zmq
+import yaml
 import sqlalchemy
 
 
 class DictLoader:
     "Default loader for Python dict object."
-    
+
     def __init__(self, verbose: bool = False) -> None:
         self._verbose = verbose
 
@@ -105,8 +106,6 @@ class _Worker(Thread):
         recv_method = self._conf.get("recv", {"method": "recv_pyobj"}).get("method", "recv_pyobj")
         self._recv = getattr(self._sock, recv_method)
 
-        # print(f"Worker {self._name} connected to {self._conf['address']} ({mq_type}, {mq_method})", file=sys.stderr)
-
         # Dynamically import the loader class.
         default_loader = {"class": "mq2db.DictLoader"}
         module_name, class_name = self._conf.get("loader", default_loader).get("class", "mq2db.DictLoader").rsplit(".", 1)
@@ -127,8 +126,10 @@ class _Worker(Thread):
         self._auto_datetime = dbconf.get("_datetime_", False)
         self._auto_timestamp = dbconf.get("_timestamp_", False)
         self._auto_raw = dbconf.get("_raw_", False)
-        primary_key = dbconf.get("primary_key", ["_datetime_"] if self._auto_datetime else None)
-        columns_spec = [",\n".join(f"  {key} {val}" for key, val in dbconf.get("columns", {}).items())]  # User specified columns
+        primary_key: list[str] = dbconf.get("primary_key", ["_datetime_"] if self._auto_datetime else None)
+        unique: dict = dbconf.get("unique")
+        # User specified columns
+        columns_spec = [",\n".join(f"  {key} {val}" for key, val in dbconf.get("columns", {}).items())]
         if self._auto_datetime:
             columns_spec.insert(0, "  _datetime_ DATETIME NOT NULL")
         if self._auto_timestamp:
@@ -137,9 +138,12 @@ class _Worker(Thread):
             columns_spec.append("  _raw_ BLOB NOT NULL")  # Special, raw bytes
         if primary_key is not None:
             columns_spec.append(f"  PRIMARY KEY({','.join(primary_key)})")
+        if unique:
+            for name, columns in unique.items():
+                columns_spec.append(f"  CONSTRAINT {name} UNIQUE({','.join(columns)})")
         columns_spec = ",\n".join(columns_spec)
         self._sql_table = sqlalchemy.text(f"CREATE TABLE IF NOT EXISTS {self._name} (\n{columns_spec});")
-        
+
         # Indices settings.
         indices = dbconf.get("indices")
         self._sql_indices = []
@@ -167,15 +171,16 @@ class _Worker(Thread):
 
         # Interval for database writing.
         self._interval = timedelta(**dbconf.get("interval", {"seconds": 1}))
-        
         self._sql_init = [
             sqlalchemy.text(cmd) for cmd in dbconf.get("init", [])
         ]
 
     def stop(self):
+        "Stop the worker thread."
         self._stop_event.set()
 
     def flush(self, now: datetime, rows: list[dict]):
+        "Flush stored rows into the database."
         if not rows:
             return
         url = now.strftime(self._db_url)
@@ -190,32 +195,34 @@ class _Worker(Thread):
                 rows.clear()
 
     def run(self):
-        rows = []
         now = prev = datetime.now(timezone.utc)
+        rows = []
         while not self._stop_event.is_set():
+            # Add new data in rows.
             try:
                 data = self._recv()
                 now = datetime.now(timezone.utc)
-                dict_repr = self._loader(data)
-                if not isinstance(dict_repr, list):
-                    dict_repr = [dict_repr]
-                for each in dict_repr:
+                list_of_dict = self._loader(data)
+                if not isinstance(list_of_dict, list):
+                    list_of_dict = [list_of_dict]
+                for each in list_of_dict:
                     if self._auto_datetime:
                         each["_datetime_"] = now
                     if self._auto_timestamp:
                         each["_timestamp_"] = int(now.timestamp())
                     if self._auto_raw:
                         each["_raw_"] = data
-                rows.extend(dict_repr)
+                    dict_repr = {key: None for key in self._columns}
+                    dict_repr.update(each)
+                    rows.append(dict_repr)
             except zmq.Again:
                 continue
-            
+            # Flush and clean rows
             if now - prev > self._interval:
                 try:
                     self.flush(now, rows)
                     prev = now
-                except:
-                    import traceback
+                except Exception:
                     traceback.print_exc()
         self.flush(now, rows)
 
@@ -234,7 +241,7 @@ class Mq2db:
             Section name in the YAML file for mq2db specific configuration.
             Something like "mq2db.specific.setting".
         """
-        with open(path_yaml) as f:
+        with open(path_yaml, encoding="utf-8") as f:
             self._conf = yaml.safe_load(f)
         self._threads: list[_Worker] = []
         if section is not None:

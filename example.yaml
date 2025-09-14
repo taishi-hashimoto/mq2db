@@ -75,6 +75,11 @@ targets:
       # Multiple columns can be specified as a list entries.
       primary_key:
         - somenumber
+      # Unique constraint at table creation.
+      unique:
+        constraint_name:
+          - somecolumn
+          - anothercolumn
       # Indices configuration.
       # Multiple indices can be created.
       # If you just need auto index by primary key, just remove this section.
